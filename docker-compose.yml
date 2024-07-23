@@ -1,0 +1,30 @@
+---
+
+services:
+  node:
+    # build:
+    #   context: .
+    #   target: development
+    image: nestjs-test:dev
+    ports:
+      - ${PORT}:${PORT}
+    environment:
+      MONGODB_NAME: $MONGODB_NAME
+      MONGODB_USER: $MONGODB_USER
+      MONGODB_PASSWORD: $MONGODB_PASSWORD
+      JWT_ACCESS_EXPIRES: $JWT_ACCESS_EXPIRES
+      JWT_ACCESS_SECRET: $JWT_ACCESS_SECRET
+      JWT_REFRESH_EXPIRES: $JWT_REFRESH_EXPIRES
+      JWT_REFRESH_SECRET: $JWT_REFRESH_SECRET
+      PORT: $PORT
+    volumes:
+      - ./:/home/node/app
+      - /home/node/app/node_modules
+
+  mongo:
+    image: mongo:7-jammy
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: $MONGODB_USER
+      MONGO_INITDB_ROOT_PASSWORD: $MONGODB_PASSWORD
+      MONGO_INITDB_DATABASE: $MONGODB_NAME

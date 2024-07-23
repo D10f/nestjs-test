@@ -1,0 +1,16 @@
+.git/
+dist/
+node_modules/
+
+.gitignore
+.dockerignore
+.env*
+.prettier*
+.eslint*
+
+Dockerfile
+Jenkinsfile
+Makefile
+docker-compose*.yml
+
+README*
