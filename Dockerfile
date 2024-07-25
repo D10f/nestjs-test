@@ -1,13 +1,22 @@
 FROM node:20-slim AS base
-ENV PATH=/home/node/app/node_modules/.bin:$PATH
-EXPOSE 5000
-WORKDIR /home/node/app
-RUN chown node:node /home/node/app
+
+ARG PORT=5000
+ENV PORT=$PORT
+EXPOSE $PORT
+
+ARG WORK_DIR=/home/node/app
+ENV WORK_DIR=$WORK_DIR
+WORKDIR $WORK_DIR
+
+ARG NODE_ENV=production
+ENV NODE_ENV=$NODE_ENV
+
+RUN chown node:node $WORK_DIR
 RUN apt-get update
 COPY --chown=node:node package*.json ./
 
 FROM base AS development
-ENV NODE_ENV=development
+ENV PATH=/home/node/app/node_modules/.bin:$PATH
 RUN apt-get install -y --no-install-recommends procps
 USER node
 RUN npm install

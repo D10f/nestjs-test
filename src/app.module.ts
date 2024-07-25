@@ -1,38 +1,40 @@
 import { Module } from '@nestjs/common';
+import { MongooseModule, MongooseModuleAsyncOptions } from '@nestjs/mongoose';
 import {
   ConfigModule,
-  ConfigModuleOptions,
   ConfigService,
+  ConfigModuleOptions,
 } from '@nestjs/config';
-import { MongooseModule, MongooseModuleAsyncOptions } from '@nestjs/mongoose';
+import { JwtModule, JwtModuleAsyncOptions } from '@nestjs/jwt';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
-import { schema, SchemaOut } from './config/config.schema';
-import { JwtModule } from '@nestjs/jwt';
-
-const appConfig: ConfigModuleOptions = {
-  ignoreEnvFile: true,
-  validate: schema.parse,
-};
+import { AppConfig, validationSchema } from './config/schema';
 
 const mongooseConfig: MongooseModuleAsyncOptions = {
   imports: [ConfigModule],
   inject: [ConfigService],
-  useFactory: (configService: ConfigService<SchemaOut>) => {
+  useFactory: (configService: ConfigService<AppConfig>) => {
     const name = configService.get('MONGODB_NAME');
     const user = configService.get('MONGODB_USER');
-    const password = configService.get('MONGODB_PASSWORD');
+    const pass = configService.get('MONGODB_PASSWORD');
+
     return {
-      uri: `mongodb://${user}:${password}@mongo:27017/${name}?authSource=admin`,
+      uri: `mongodb://${user}:${pass}@mongo:27017/${name}?authSource=admin`,
     };
   },
 };
 
-const jwtConfig = {
+const envConfig: ConfigModuleOptions = {
+  ignoreEnvFile: true,
+  validate: validationSchema.parse,
+};
+
+const jwtConfig: JwtModuleAsyncOptions = {
   imports: [ConfigModule],
   inject: [ConfigService],
-  useFactory: (configService: ConfigService<SchemaOut>) => ({
+  useFactory: (configService: ConfigService<AppConfig>) => ({
     secret: configService.get('JWT_ACCESS_SECRET'),
     global: true,
     signOptions: {
@@ -43,9 +45,10 @@ const jwtConfig = {
 
 @Module({
   imports: [
+    UserModule,
     AuthModule,
-    ConfigModule.forRoot(appConfig),
     MongooseModule.forRootAsync(mongooseConfig),
+    ConfigModule.forRoot(envConfig),
     JwtModule.registerAsync(jwtConfig),
   ],
   controllers: [AppController],

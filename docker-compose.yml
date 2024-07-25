@@ -2,10 +2,13 @@
 
 services:
   node:
-    # build:
-    #   context: .
-    #   target: development
-    image: nestjs-test:dev
+    build:
+      context: .
+      target: development
+      args:
+        NODE_ENV: development
+        WORK_DIR: $WORK_DIR
+        PORT: $PORT
     ports:
       - ${PORT}:${PORT}
     environment:
@@ -18,13 +21,13 @@ services:
       JWT_REFRESH_SECRET: $JWT_REFRESH_SECRET
       PORT: $PORT
     volumes:
-      - ./:/home/node/app
-      - /home/node/app/node_modules
+      - ./:${WORK_DIR}
+      - ${WORK_DIR}/node_modules
 
   mongo:
     image: mongo:7-jammy
     restart: always
     environment:
+      MONGO_INITDB_DATABASE: $MONGODB_NAME
       MONGO_INITDB_ROOT_USERNAME: $MONGODB_USER
       MONGO_INITDB_ROOT_PASSWORD: $MONGODB_PASSWORD
-      MONGO_INITDB_DATABASE: $MONGODB_NAME
