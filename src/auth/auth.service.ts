@@ -3,8 +3,10 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { verify } from 'argon2';
+import { AppConfig } from 'src/config/schema';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { User } from 'src/user/schemas/user.schema';
 import { UserService } from 'src/user/user.service';
@@ -14,6 +16,7 @@ export class AuthService {
   constructor(
     private userService: UserService,
     private jwtService: JwtService,
+    private configService: ConfigService<AppConfig>,
   ) {}
 
   async signup(createUserDto: CreateUserDto) {
@@ -36,8 +39,8 @@ export class AuthService {
       throw new UnauthorizedException('Incorrect credentials');
     }
 
-    const accessToken = await this.generateTokens(user);
-    console.log(accessToken);
+    const tokens = await this.generateTokens(user);
+    console.log(tokens);
 
     return "Fine, you're in.";
   }
@@ -49,6 +52,16 @@ export class AuthService {
       email,
     });
 
-    return accessToken;
+    const refreshToken = await this.jwtService.signAsync(
+      {
+        sub: _id,
+      },
+      {
+        secret: this.configService.get('JWT_REFRESH_SECRET'),
+        expiresIn: this.configService.get('JWT_REFRESH_EXPIRES'),
+      },
+    );
+
+    return { accessToken, refreshToken };
   }
 }

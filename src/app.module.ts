@@ -29,14 +29,15 @@ const mongooseConfig: MongooseModuleAsyncOptions = {
 const envConfig: ConfigModuleOptions = {
   ignoreEnvFile: true,
   validate: validationSchema.parse,
+  isGlobal: true,
 };
 
 const jwtConfig: JwtModuleAsyncOptions = {
   imports: [ConfigModule],
   inject: [ConfigService],
+  global: true,
   useFactory: (configService: ConfigService<AppConfig>) => ({
     secret: configService.get('JWT_ACCESS_SECRET'),
-    global: true,
     signOptions: {
       expiresIn: configService.get('JWT_ACCESS_EXPIRES'),
     },
