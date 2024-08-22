@@ -6,16 +6,21 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    private userService: UserService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req: Request = context.switchToHttp().getRequest();
     const token = this.getTokenFromHeader(req);
     const payload = await this.jwtService.verifyAsync(token);
-    req['user'] = payload;
+    const user = await this.userService.findOne({ id: payload.sub });
+    req['user'] = user;
     return true;
   }
 

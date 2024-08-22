@@ -1,16 +1,12 @@
-import {
-  Body,
-  Controller,
-  Headers,
-  Post,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { AuthGuard } from './guards/jwt.guard';
 import { AuthRefreshGuard } from './guards/jwt-refresh.guard';
+import { Cookie } from 'src/decorators/cookie.decorator';
+import { User } from 'src/decorators/user.decorator';
+import { User as UserSchema } from 'src/user/schemas/user.schema';
 
 @Controller('auth')
 export class AuthController {
@@ -34,16 +30,21 @@ export class AuthController {
 
   @Post('logout')
   @UseGuards(AuthGuard)
-  logout(@Res({ passthrough: true }) res: Response) {
-    return this.authService.logout(res);
+  logout(
+    @User() user: UserSchema,
+    @Cookie('refreshToken') token: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.authService.logout(user, token, res);
   }
 
   @Post('refresh')
   @UseGuards(AuthRefreshGuard)
   refresh(
-    @Headers('cookie') cookies: string,
+    @User() user: UserSchema,
+    @Cookie('refreshToken') token: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    return this.authService.refresh(cookies, res);
+    return this.authService.refresh(user, token, res);
   }
 }
