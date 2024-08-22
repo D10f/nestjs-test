@@ -20,9 +20,9 @@ export class UserService {
     });
   }
 
-  findOne({ name, email }: FindOneUserDto) {
+  findOne({ id, name, email }: FindOneUserDto) {
     return this.userModel.findOne({
-      $or: [{ name }, { email }],
+      $or: [{ _id: id }, { name }, { email }],
     });
   }
 }
