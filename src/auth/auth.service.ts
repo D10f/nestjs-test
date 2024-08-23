@@ -9,8 +9,8 @@ import { verify } from 'argon2';
 import { Response } from 'express';
 import { AppConfig } from 'src/config/schema';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { User } from 'src/user/schemas/user.schema';
-import { UserService } from 'src/user/user.service';
+import { User } from '../user/schemas/user.schema';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class AuthService {

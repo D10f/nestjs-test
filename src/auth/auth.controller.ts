@@ -1,12 +1,12 @@
 import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { CreateUserDto } from '../user/dto/create-user.dto';
 import { AuthGuard } from './guards/jwt.guard';
 import { AuthRefreshGuard } from './guards/jwt-refresh.guard';
-import { Cookie } from 'src/decorators/cookie.decorator';
-import { User } from 'src/decorators/user.decorator';
-import { User as UserSchema } from 'src/user/schemas/user.schema';
+import { Cookie } from '../decorators/cookie.decorator';
+import { User } from '../decorators/user.decorator';
+import { User as UserSchema } from '../user/schemas/user.schema';
 
 @Controller('auth')
 export class AuthController {
