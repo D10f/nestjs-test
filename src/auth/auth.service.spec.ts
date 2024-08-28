@@ -1,22 +1,22 @@
+import { UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import * as argon2 from 'argon2';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 import { User } from '../user/schemas/user.schema';
-import * as argon2 from 'argon2';
-import { UnauthorizedException } from '@nestjs/common';
-import { argv0 } from 'process';
 
 jest.mock('argon2');
+jest.mock('@nestjs/config');
 jest.mock('../user/user.service');
 
 describe('AuthService', () => {
   let authService: AuthService;
   let userService: UserService;
   let jwtService: JwtService;
-  //let configService: ConfigService;
+  let configService: ConfigService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -26,7 +26,7 @@ describe('AuthService', () => {
     authService = module.get<AuthService>(AuthService);
     userService = module.get<UserService>(UserService);
     jwtService = module.get<JwtService>(JwtService);
-    //configService = module.get<ConfigService>(ConfigService);
+    configService = module.get<ConfigService>(ConfigService);
 
     jest.clearAllMocks();
   });
@@ -221,7 +221,7 @@ describe('AuthService', () => {
     });
   });
 
-  describe.only('refresh', () => {
+  describe('refresh', () => {
     const user = {
       name: 'John Doe',
       email: 'john.doe@example.com',
