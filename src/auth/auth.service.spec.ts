@@ -287,4 +287,38 @@ describe('AuthService', () => {
       expect(authService.invalidateToken).not.toHaveBeenCalled();
     });
   });
+
+  describe('generateTokens', () => {
+    const user = {
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      sessions: ['token1', 'token2'],
+    } as any as User;
+
+    const token = 'token';
+
+    const res = {} as any as Response;
+
+    beforeEach(() => {
+      jest.spyOn(authService, 'generateAccessToken').mockResolvedValue(token);
+      jest
+        .spyOn(authService, 'generateRefreshToken')
+        .mockResolvedValue('token');
+    });
+
+    it('should invoke authService.generateAccessToken', async () => {
+      await authService.generateTokens(user, res);
+      expect(authService.generateAccessToken).toHaveBeenCalledWith(user);
+    });
+
+    it('should invoke authService.generateRefreshToken', async () => {
+      await authService.generateTokens(user, res);
+      expect(authService.generateRefreshToken).toHaveBeenCalledWith(user, res);
+    });
+
+    it('should return user and generated access token', async () => {
+      const result = await authService.generateTokens(user, res);
+      expect(result).toEqual({ user, accessToken: token });
+    });
+  });
 });
