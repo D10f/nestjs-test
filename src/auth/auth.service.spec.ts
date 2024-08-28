@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtService } from '@nestjs/jwt';
+import { JsonWebTokenError, JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
@@ -16,7 +16,7 @@ jest.mock('../user/user.service');
 describe('AuthService', () => {
   let authService: AuthService;
   let userService: UserService;
-  let jwtService: JwtService;
+  //let jwtService: JwtService;
   //let configService: ConfigService;
 
   beforeEach(async () => {
@@ -26,7 +26,7 @@ describe('AuthService', () => {
 
     authService = module.get<AuthService>(AuthService);
     userService = module.get<UserService>(UserService);
-    jwtService = module.get<JwtService>(JwtService);
+    //jwtService = module.get<JwtService>(JwtService);
     //configService = module.get<ConfigService>(ConfigService);
 
     jest.clearAllMocks();
@@ -83,16 +83,12 @@ describe('AuthService', () => {
 
   describe('login', () => {
     const user = {
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-    };
-
-    const credentials = {
-      name: 'John Doe',
-      email: 'john.doe@example.com',
       password: 'password123',
+      name: 'John Doe',
+      email: 'john.doe@example.com',
     };
 
+    const res = {} as any as Response;
     let argonSpy: jest.SpyInstance;
 
     beforeEach(async () => {
@@ -106,25 +102,29 @@ describe('AuthService', () => {
     });
 
     it('it should invoke userService.findOne', async () => {
-      await authService.login(credentials, {} as any as Response);
+      await authService.login(user, res);
       expect(userService.findOne).toHaveBeenCalled();
+      expect(userService.findOne).toHaveBeenCalledWith({
+        name: user.name,
+        email: user.email,
+      });
     });
 
     it('it should invoke argon2.verify', async () => {
-      await authService.login(credentials, {} as any as Response);
+      await authService.login(user, res);
       expect(argonSpy).toHaveBeenCalled();
+      expect(argonSpy).toHaveBeenCalledWith(user.password, user.password);
     });
 
     it('it should invoke authService.generateTokens', async () => {
-      await authService.login(credentials, {} as any as Response);
+      await authService.login(user, res);
       expect(authService.generateTokens).toHaveBeenCalled();
+      expect(authService.generateTokens).toHaveBeenCalledWith(user, res);
     });
 
     it('it should throw an Unauthorized Exception when passwords do not match', () => {
       jest.spyOn(argon2, 'verify').mockResolvedValue(false);
-      const result = expect(
-        authService.login(credentials, {} as any as Response),
-      );
+      const result = expect(authService.login(user, res));
 
       result.rejects.toThrow('Incorrect credentials');
       result.rejects.toThrow(UnauthorizedException);
@@ -132,12 +132,69 @@ describe('AuthService', () => {
 
     it('it should throw an Unauthorized Exception when user is not found', () => {
       jest.spyOn(userService, 'findOne').mockResolvedValue(null);
-      const result = expect(
-        authService.login(credentials, {} as any as Response),
-      );
+      const result = expect(authService.login(user, res));
 
       result.rejects.toThrow('Incorrect credentials');
       result.rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('logout', () => {
+    const user = {
+      password: 'password123',
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      sessions: [],
+      save: jest.fn(),
+    } as any as User;
+
+    const refreshToken = 'token1';
+
+    const res = {
+      clearCookie: jest.fn(),
+    } as any as Response;
+
+    let findSessionSpy: jest.SpyInstance;
+    let spliceSpy: jest.SpyInstance;
+    let userSaveSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      user.sessions = ['token1', 'token2'];
+      findSessionSpy = jest.spyOn(user.sessions, 'findIndex');
+      spliceSpy = jest.spyOn(user.sessions, 'splice');
+      userSaveSpy = jest.spyOn(user, 'save').mockResolvedValue(user);
+    });
+
+    it('should filter out existing user sessions', async () => {
+      await authService.logout(user, refreshToken, res);
+      expect(findSessionSpy).toHaveBeenCalled();
+      expect(spliceSpy).toHaveBeenCalledWith(0, 1);
+
+      await authService.logout(user, 'token2', res);
+      expect(spliceSpy).toHaveBeenCalledWith(0, 1);
+    });
+
+    it('should throw an UnauthorizedException when refreshToken is missing', async () => {
+      const result = expect(authService.logout(user, '', res));
+      result.rejects.toThrow('Missing refresh JWT.');
+      result.rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw a JsonWebTokenError when user session does not match refresh token.', () => {
+      authService.logout(user, 'non-existant', res).catch((error) => {
+        expect(findSessionSpy).toHaveReturnedWith(-1);
+        expect(error).toBeInstanceOf(JsonWebTokenError);
+      });
+    });
+
+    it('should invoke user.save', async () => {
+      await authService.logout(user, refreshToken, res);
+      expect(userSaveSpy).toHaveBeenCalledWith();
+    });
+
+    it('should invoke response.clearCookie', async () => {
+      await authService.logout(user, refreshToken, res);
+      expect(res.clearCookie).toHaveBeenCalled();
     });
   });
 });

@@ -4,7 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { JwtService, TokenExpiredError } from '@nestjs/jwt';
+import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { verify } from 'argon2';
 import { Response } from 'express';
 import { AppConfig } from 'src/config/schema';
@@ -48,7 +48,17 @@ export class AuthService {
   }
 
   async logout(user: User, refreshToken: string, res: Response) {
-    user.sessions = user.sessions.filter((t) => t !== refreshToken);
+    if (!refreshToken) {
+      throw new UnauthorizedException('Missing refresh JWT.');
+    }
+
+    const sessionIdx = user.sessions.findIndex((t) => t === refreshToken);
+
+    if (sessionIdx < 0) {
+      throw new JsonWebTokenError('Invalid refresh JWT.');
+    }
+
+    user.sessions.splice(sessionIdx, 1);
     await user.save();
     res.clearCookie('refreshToken');
   }
