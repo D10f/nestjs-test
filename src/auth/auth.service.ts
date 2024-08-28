@@ -8,7 +8,7 @@ import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { verify } from 'argon2';
 import { Response } from 'express';
 import { AppConfig } from 'src/config/schema';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { CreateUserDto } from '../user/dto/create-user.dto';
 import { User } from '../user/schemas/user.schema';
 import { UserService } from '../user/user.service';
 
