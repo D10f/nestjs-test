@@ -9,14 +9,12 @@ import * as argon2 from 'argon2';
 import { UnauthorizedException } from '@nestjs/common';
 
 jest.mock('argon2');
-jest.mock('@nestjs/jwt');
-jest.mock('@nestjs/config');
 jest.mock('../user/user.service');
 
 describe('AuthService', () => {
   let authService: AuthService;
   let userService: UserService;
-  //let jwtService: JwtService;
+  let jwtService: JwtService;
   //let configService: ConfigService;
 
   beforeEach(async () => {
@@ -26,7 +24,7 @@ describe('AuthService', () => {
 
     authService = module.get<AuthService>(AuthService);
     userService = module.get<UserService>(UserService);
-    //jwtService = module.get<JwtService>(JwtService);
+    jwtService = module.get<JwtService>(JwtService);
     //configService = module.get<ConfigService>(ConfigService);
 
     jest.clearAllMocks();
@@ -180,11 +178,10 @@ describe('AuthService', () => {
       result.rejects.toThrow(UnauthorizedException);
     });
 
-    it('should throw a JsonWebTokenError when user session does not match refresh token.', () => {
-      authService.logout(user, 'non-existant', res).catch((error) => {
-        expect(findSessionSpy).toHaveReturnedWith(-1);
-        expect(error).toBeInstanceOf(JsonWebTokenError);
-      });
+    it('should throw an JsonWebTokenError when session does not exist for given token.', async () => {
+      const result = expect(authService.logout(user, 'blah', res));
+      result.rejects.toThrow('Invalid refresh JWT.');
+      result.rejects.toThrow(JsonWebTokenError);
     });
 
     it('should invoke user.save', async () => {
