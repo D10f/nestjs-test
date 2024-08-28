@@ -48,11 +48,16 @@ export class AuthService {
   }
 
   async logout(user: User, refreshToken: string, res: Response) {
-    if (!refreshToken) {
+    await this.invalidateToken(user, refreshToken);
+    res.clearCookie('refreshToken');
+  }
+
+  async invalidateToken(user: User, token: string) {
+    if (!token) {
       throw new UnauthorizedException('Missing refresh JWT.');
     }
 
-    const sessionIdx = user.sessions.findIndex((t) => t === refreshToken);
+    const sessionIdx = user.sessions.findIndex((t) => t === token);
 
     if (sessionIdx < 0) {
       throw new JsonWebTokenError('Invalid refresh JWT.');
@@ -60,7 +65,6 @@ export class AuthService {
 
     user.sessions.splice(sessionIdx, 1);
     await user.save();
-    res.clearCookie('refreshToken');
   }
 
   async refresh(user: User, oldToken: string, res: Response) {
@@ -74,7 +78,7 @@ export class AuthService {
         throw error;
       }
 
-      user.sessions = user.sessions.filter((t) => t !== oldToken);
+      this.invalidateToken(user, oldToken);
       this.generateRefreshToken(user, res);
     } finally {
       return { accessToken };

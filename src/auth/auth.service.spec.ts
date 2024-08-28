@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { JsonWebTokenError, JwtService } from '@nestjs/jwt';
+import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
@@ -7,6 +7,7 @@ import { UserService } from '../user/user.service';
 import { User } from '../user/schemas/user.schema';
 import * as argon2 from 'argon2';
 import { UnauthorizedException } from '@nestjs/common';
+import { argv0 } from 'process';
 
 jest.mock('argon2');
 jest.mock('../user/user.service');
@@ -152,6 +153,38 @@ describe('AuthService', () => {
       clearCookie: jest.fn(),
     } as any as Response;
 
+    beforeEach(() => {
+      jest.spyOn(authService, 'invalidateToken').mockResolvedValue(undefined);
+    });
+
+    it('should invoke authService.invalidateToken', async () => {
+      await authService.logout(user, refreshToken, res);
+      expect(authService.invalidateToken).toHaveBeenCalledWith(
+        user,
+        refreshToken,
+      );
+    });
+
+    it('should invoke response.clearCookie', async () => {
+      await authService.logout(user, refreshToken, res);
+      expect(res.clearCookie).toHaveBeenCalledWith('refreshToken');
+    });
+  });
+
+  describe('invalidateToken', () => {
+    const user = {
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      sessions: ['token1', 'token2'],
+      save: jest.fn(),
+    } as any as User;
+
+    const token = user.sessions[0];
+
+    const res = {
+      clearCookie: jest.fn(),
+    } as any as Response;
+
     let findSessionSpy: jest.SpyInstance;
     let spliceSpy: jest.SpyInstance;
     let userSaveSpy: jest.SpyInstance;
@@ -161,15 +194,7 @@ describe('AuthService', () => {
       findSessionSpy = jest.spyOn(user.sessions, 'findIndex');
       spliceSpy = jest.spyOn(user.sessions, 'splice');
       userSaveSpy = jest.spyOn(user, 'save').mockResolvedValue(user);
-    });
-
-    it('should filter out existing user sessions', async () => {
-      await authService.logout(user, refreshToken, res);
-      expect(findSessionSpy).toHaveBeenCalled();
-      expect(spliceSpy).toHaveBeenCalledWith(0, 1);
-
-      await authService.logout(user, 'token2', res);
-      expect(spliceSpy).toHaveBeenCalledWith(0, 1);
+      jest.spyOn(res, 'clearCookie').mockReturnValue(undefined);
     });
 
     it('should throw an UnauthorizedException when refreshToken is missing', async () => {
@@ -184,14 +209,82 @@ describe('AuthService', () => {
       result.rejects.toThrow(JsonWebTokenError);
     });
 
-    it('should invoke user.save', async () => {
-      await authService.logout(user, refreshToken, res);
-      expect(userSaveSpy).toHaveBeenCalledWith();
+    it('should remove token from user sessions array', async () => {
+      await authService.logout(user, user.sessions[0], res);
+      expect(findSessionSpy).toHaveBeenCalled();
+      expect(spliceSpy).toHaveBeenCalledWith(0, 1);
     });
 
-    it('should invoke response.clearCookie', async () => {
-      await authService.logout(user, refreshToken, res);
-      expect(res.clearCookie).toHaveBeenCalled();
+    it('should invoke user.save', async () => {
+      await authService.logout(user, token, res);
+      expect(userSaveSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe.only('refresh', () => {
+    const user = {
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      sessions: ['token1', 'token2'],
+    } as any as User;
+
+    const token = user.sessions[0];
+
+    const res = {} as any as Response;
+
+    beforeEach(() => {
+      jest.spyOn(jwtService, 'verifyAsync').mockResolvedValue({});
+      jest.spyOn(authService, 'generateAccessToken').mockResolvedValue('token');
+      jest.spyOn(authService, 'invalidateToken').mockResolvedValue(undefined);
+      jest
+        .spyOn(authService, 'generateRefreshToken')
+        .mockResolvedValue('token');
+    });
+
+    it('should invoke jwtService.verifyAsync', async () => {
+      await authService.refresh(user, token, res);
+      expect(jwtService.verifyAsync).toHaveBeenCalledWith(token);
+    });
+
+    it('should invoke authService.generateAccessToken', async () => {
+      await authService.refresh(user, token, res);
+      expect(authService.generateAccessToken).toHaveBeenCalledWith(user);
+    });
+
+    it('should return a new access token', async () => {
+      const result = await authService.refresh(user, token, res);
+      expect(result).toEqual({ accessToken: 'token' });
+    });
+
+    it('should invoke authService.invalidateToken if refresh token has expired', async () => {
+      jest
+        .spyOn(jwtService, 'verifyAsync')
+        .mockRejectedValue(new TokenExpiredError('Expired token', new Date()));
+
+      await authService.refresh(user, token, res);
+      expect(authService.invalidateToken).toHaveBeenCalledWith(user, token);
+    });
+
+    it('should invoke authService.generateRefreshToken if refresh token has expired.', async () => {
+      jest
+        .spyOn(jwtService, 'verifyAsync')
+        .mockRejectedValue(new TokenExpiredError('Expired token', new Date()));
+
+      await authService.refresh(user, token, res);
+      expect(authService.generateRefreshToken).toHaveBeenCalledWith(user, res);
+    });
+
+    it('should not return a valid access token if refresth token is expired.', async () => {
+      jest
+        .spyOn(jwtService, 'verifyAsync')
+        .mockRejectedValue(new JsonWebTokenError('Invalid'));
+
+      await expect(authService.refresh(user, token, res)).resolves.toEqual({
+        accessToken: undefined,
+      });
+      expect(authService.generateAccessToken).not.toHaveBeenCalled();
+      expect(authService.generateRefreshToken).not.toHaveBeenCalled();
+      expect(authService.invalidateToken).not.toHaveBeenCalled();
     });
   });
 });
