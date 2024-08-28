@@ -321,4 +321,27 @@ describe('AuthService', () => {
       expect(result).toEqual({ user, accessToken: token });
     });
   });
+
+  describe('generateAccessToken', () => {
+    const user = {
+      _id: 123,
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      sessions: ['token1', 'token2'],
+    } as any as User;
+
+    beforeEach(() => {
+      jest.spyOn(jwtService, 'signAsync').mockResolvedValue('access_token');
+    });
+
+    it('should invoke jwtService.signAsync', async () => {
+      await authService.generateAccessToken(user);
+      expect(jwtService.signAsync).toHaveBeenCalledWith({ sub: user._id });
+    });
+
+    it('should return signed token', async () => {
+      const result = await authService.generateAccessToken(user);
+      expect(result).toEqual('access_token');
+    });
+  });
 });
