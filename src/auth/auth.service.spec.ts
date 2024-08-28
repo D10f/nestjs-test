@@ -344,4 +344,61 @@ describe('AuthService', () => {
       expect(result).toEqual('access_token');
     });
   });
+
+  describe('generateRefreshToken', () => {
+    const user = {
+      _id: 123,
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      sessions: ['token1', 'token2'],
+      save: jest.fn(),
+    } as any as User;
+
+    const res = {
+      cookie: jest.fn(),
+    } as any as Response;
+
+    let userSessionPushSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      jest.spyOn(jwtService, 'signAsync').mockResolvedValue('refresh_token');
+      jest.spyOn(configService, 'get').mockReturnValueOnce('super_secret');
+      jest.spyOn(configService, 'get').mockReturnValueOnce('1d');
+      userSessionPushSpy = jest.spyOn(user.sessions, 'push');
+    });
+
+    it('should invoke jwtService.signAsync', async () => {
+      await authService.generateRefreshToken(user, res);
+      expect(jwtService.signAsync).toHaveBeenCalledWith(
+        { sub: user._id },
+        {
+          secret: 'super_secret',
+          expiresIn: '1d',
+        },
+      );
+    });
+
+    it('should set refreshToken cookie', async () => {
+      await authService.generateRefreshToken(user, res);
+      expect(res.cookie).toHaveBeenCalledWith('refreshToken', 'refresh_token', {
+        httpOnly: true,
+        secure: true,
+      });
+    });
+
+    it('should push the generated refresh token to user session', async () => {
+      await authService.generateRefreshToken(user, res);
+      expect(userSessionPushSpy).toHaveBeenCalledWith('refresh_token');
+    });
+
+    it('should invoke user.save method', async () => {
+      await authService.generateRefreshToken(user, res);
+      expect(user.save).toHaveBeenCalled();
+    });
+
+    it('should returned generated refresh token', async () => {
+      const result = await authService.generateRefreshToken(user, res);
+      expect(result).toEqual('refresh_token');
+    });
+  });
 });
