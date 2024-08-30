@@ -1,4 +1,9 @@
-import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpStatus,
+} from '@nestjs/common';
 import { TokenExpiredError, JsonWebTokenError } from '@nestjs/jwt';
 import { Request, Response } from 'express';
 
@@ -13,7 +18,10 @@ export class JwtExceptionFilter<T extends JsonWebTokenErrors>
     const req = ctx.getRequest<Request>();
     const res = ctx.getResponse<Response>();
 
-    const status = exception instanceof TokenExpiredError ? 403 : 401;
+    const status =
+      exception instanceof TokenExpiredError
+        ? HttpStatus.FORBIDDEN
+        : HttpStatus.UNAUTHORIZED;
 
     res
       .status(status)
