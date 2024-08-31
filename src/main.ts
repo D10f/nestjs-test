@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { HttpStatus, ValidationPipe } from '@nestjs/common';
+import { UnprocessableEntityException, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
@@ -14,7 +14,14 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
-      errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+      exceptionFactory(errors) {
+        return new UnprocessableEntityException(
+          errors.map((error) => ({
+            property: error.property,
+            message: error.constraints[Object.keys(error.constraints)[0]],
+          })),
+        );
+      },
     }),
   );
 
