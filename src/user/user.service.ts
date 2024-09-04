@@ -5,6 +5,7 @@ import { hash } from 'argon2';
 import { User } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { FindOneUserDto } from './dto/find-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -24,5 +25,19 @@ export class UserService {
     return this.userModel.findOne({
       $or: [{ _id: id }, { name }, { email }],
     });
+  }
+
+  async update(user: User, updateUserDto: UpdateUserDto) {
+    for (const prop in updateUserDto) {
+      if (prop === 'password') {
+        const password = await hash(prop);
+        user.password = password;
+        continue;
+      }
+
+      user[prop] = prop ? prop : user[prop];
+    }
+
+    return await user.save();
   }
 }

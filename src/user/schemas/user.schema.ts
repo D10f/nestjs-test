@@ -26,6 +26,12 @@ export class User extends Document {
 
   @Prop([String])
   sessions: string[];
+
+  @Prop()
+  vaultKey: string;
+
+  @Prop()
+  data: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
