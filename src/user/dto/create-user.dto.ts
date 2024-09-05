@@ -1,10 +1,4 @@
-import {
-  IsEmail,
-  IsOptional,
-  IsString,
-  Matches,
-  MinLength,
-} from 'class-validator';
+import { IsEmail, IsHash, IsOptional, IsString } from 'class-validator';
 
 export class CreateUserDto {
   @IsString()
@@ -15,9 +9,6 @@ export class CreateUserDto {
   email?: string;
 
   @IsString()
-  @MinLength(6)
-  @Matches(/^(?=.*[0-9])/, {
-    message: 'Password must contain at least one number.',
-  })
+  @IsHash('sha256')
   password: string;
 }

@@ -5,12 +5,12 @@ import { AuthGuard } from 'src/auth/guards/jwt.guard';
 import { User } from 'src/decorators/user.decorator';
 import { User as UserSchema } from '../user/schemas/user.schema';
 
+@UseGuards(AuthGuard)
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Patch('update')
-  @UseGuards(AuthGuard)
   update(@User() user: UserSchema, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.update(user, updateUserDto);
   }
