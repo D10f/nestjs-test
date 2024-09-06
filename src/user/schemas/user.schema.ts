@@ -31,7 +31,7 @@ export class User extends Document {
   vaultKey: string;
 
   @Prop()
-  data: string;
+  prefs: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

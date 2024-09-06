@@ -11,5 +11,5 @@ export class UpdateUserDto extends PartialType(
 
   @IsBase64()
   @IsOptional()
-  data?: string;
+  prefs?: string;
 }
