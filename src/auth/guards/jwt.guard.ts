@@ -26,7 +26,13 @@ export class AuthGuard implements CanActivate {
 
   private getTokenFromHeader(req: Request) {
     const authHeader = req.headers.authorization as string;
+
+    if (!authHeader) {
+      throw new UnauthorizedException('Missing Authorization Header.');
+    }
+
     const [prefix, token] = authHeader.split(' ');
+
     if (prefix !== 'Bearer' || !token) {
       throw new UnauthorizedException('Missing JsonWebToken.');
     }
