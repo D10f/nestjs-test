@@ -29,6 +29,14 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  app.enableCors({
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+    origin: config.get('NODE_ENV') === 'production' ? false : '*',
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  });
+
   await app.listen(config.get('PORT'));
   console.log(`app running in port: ${config.get('PORT')}`);
 }
