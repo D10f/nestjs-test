@@ -73,14 +73,14 @@ export class AuthService {
     try {
       await this.jwtService.verifyAsync(oldToken);
       accessToken = await this.generateAccessToken(user);
+      return { accessToken };
     } catch (error) {
       if (!(error instanceof TokenExpiredError)) {
         throw error;
       }
 
       this.invalidateToken(user, oldToken);
-      this.generateRefreshToken(user, res);
-    } finally {
+      //this.generateRefreshToken(user, res);
       return { accessToken };
     }
   }
@@ -111,6 +111,7 @@ export class AuthService {
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: true,
+      sameSite: 'none',
     });
 
     user.sessions.push(refreshToken);

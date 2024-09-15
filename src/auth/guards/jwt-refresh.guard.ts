@@ -8,6 +8,12 @@ import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { Request } from 'express';
 import { UserService } from '../../user/user.service';
 
+type JwtPayload = {
+  sub: string;
+  iat: number;
+  exp: number;
+};
+
 @Injectable()
 export class AuthRefreshGuard implements CanActivate {
   constructor(
@@ -18,17 +24,20 @@ export class AuthRefreshGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req: Request = context.switchToHttp().getRequest();
     const token = this.getTokenFromHeader(req);
+    let payload: JwtPayload;
 
     // Verify the token is valid, but has expired.
     try {
-      const payload = await this.jwtService.verifyAsync(token);
-      const user = await this.userService.findOne({ id: payload.sub });
-      req['user'] = user;
+      payload = await this.jwtService.verifyAsync(token);
     } catch (error) {
       if (!(error instanceof TokenExpiredError)) {
         throw error;
       }
+      payload = await this.jwtService.decode(token);
     }
+
+    const user = await this.userService.findOne({ id: payload.sub });
+    req['user'] = user;
     return true;
   }
 
