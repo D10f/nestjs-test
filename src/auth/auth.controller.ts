@@ -38,7 +38,7 @@ export class AuthController {
     return this.authService.logout(user, token, res);
   }
 
-  @Post('refresh')
+  @Get('refresh')
   @UseGuards(AuthRefreshGuard)
   refresh(
     @User() user: UserSchema,
