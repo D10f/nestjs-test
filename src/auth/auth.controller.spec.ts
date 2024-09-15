@@ -66,6 +66,17 @@ describe('AuthController', () => {
       expect(authService.login).toHaveBeenCalled();
     });
 
+    it('should provide name as both name and email property to authService.login', () => {
+      expect(authService.login).toHaveBeenCalledWith(
+        {
+          name: dto.name,
+          email: dto.name,
+          password: dto.password,
+        },
+        response as Response,
+      );
+    });
+
     it('should return a new user with an access token', () => {
       expect(result).toHaveProperty('user');
       expect(result).toHaveProperty('accessToken');
