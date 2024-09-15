@@ -35,6 +35,7 @@ async function bootstrap() {
     origin: config.get('NODE_ENV') === 'production' ? false : '*',
     preflightContinue: false,
     optionsSuccessStatus: 204,
+    credentials: true,
   });
 
   await app.listen(config.get('PORT'));
