@@ -21,9 +21,9 @@ export class UserService {
     });
   }
 
-  findOne({ id, name, email }: FindOneUserDto) {
+  findOne({ id: _id, name, email }: FindOneUserDto) {
     return this.userModel.findOne({
-      $or: [{ _id: id }, { name }, { email }],
+      $or: [{ _id }, { name }, { email: { $exists: true, $eq: email } }],
     });
   }
 
