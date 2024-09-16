@@ -28,16 +28,17 @@ export class UserService {
   }
 
   async update(user: User, updateUserDto: UpdateUserDto) {
-    for (const prop in updateUserDto) {
-      switch (prop as keyof UpdateUserDto) {
-        case 'password':
-          user.password = await hash(prop);
-          break;
-        default:
-          user[prop] = updateUserDto[prop];
-          break;
+    const props = Object.entries(updateUserDto);
+
+    if (props.length <= 0) return user;
+
+    props.forEach(async ([key, value]) => {
+      if (key === 'password') {
+        user.password = await hash(value);
+      } else {
+        user[key] = value;
       }
-    }
+    });
 
     return await user.save();
   }
