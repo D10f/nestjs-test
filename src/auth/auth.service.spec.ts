@@ -374,6 +374,7 @@ describe('AuthService', () => {
       jest.spyOn(jwtService, 'signAsync').mockResolvedValue('refresh_token');
       jest.spyOn(configService, 'get').mockReturnValueOnce('super_secret');
       jest.spyOn(configService, 'get').mockReturnValueOnce('1d');
+      jest.spyOn(configService, 'get').mockReturnValueOnce(123);
       userSessionPushSpy = jest.spyOn(user.sessions, 'push');
     });
 
@@ -390,10 +391,13 @@ describe('AuthService', () => {
 
     it('should set refreshToken cookie', async () => {
       await authService.generateRefreshToken(user, res);
+      expect(configService.get).toHaveBeenLastCalledWith('JWT_REFRESH_EXPIRES');
+      expect(configService.get).toHaveBeenCalledTimes(3);
       expect(res.cookie).toHaveBeenCalledWith('refreshToken', 'refresh_token', {
         httpOnly: true,
         secure: true,
         sameSite: 'none',
+        maxAge: 123,
       });
     });
 

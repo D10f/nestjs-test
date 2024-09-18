@@ -112,6 +112,7 @@ export class AuthService {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
+      maxAge: this.configService.get('JWT_REFRESH_EXPIRES'),
     });
 
     user.sessions.push(refreshToken);
